@@ -1,0 +1,31 @@
+TERMS OF SERVICE
+
+1. ACCEPTANCE OF TERMS
+By accessing and using this service, you accept and agree to be bound by the terms and provision of this agreement.
+
+2. DATA COLLECTION AND PRIVACY
+We collect personal information including your name, email address, IP address, and usage data. This information may be shared with third parties for marketing purposes. We retain your data indefinitely unless you request deletion.
+
+3. USER ACCOUNTS
+Users must provide accurate information when creating accounts. We reserve the right to terminate accounts at any time without notice or refund.
+
+4. PROHIBITED USES
+Users may not use the service for any illegal activities. We have sole discretion to determine what constitutes prohibited use.
+
+5. INTELLECTUAL PROPERTY
+All content on this service is our property. Users grant us unlimited rights to any content they upload.
+
+6. DISCLAIMERS AND LIABILITY
+We provide the service "as is" without any warranties. We are not liable for any damages arising from use of the service, including data loss or security breaches.
+
+7. TERMINATION
+We may terminate your access immediately without cause. Upon termination, all rights granted to you will cease.
+
+8. GOVERNING LAW
+These terms are governed by the laws of our jurisdiction. Any disputes must be resolved through binding arbitration.
+
+9. MODIFICATIONS
+We may modify these terms at any time without notice. Continued use constitutes acceptance of modified terms.
+
+10. CONTACT INFORMATION
+For questions about these terms, contact us at legal@example.com.
