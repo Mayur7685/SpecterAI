@@ -3,19 +3,22 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { ComplianceReport } from '@/lib/tc-analyzer';
+import { NicheId } from '@/lib/niches';
 
 interface FileUploadProps {
   onAnalysisStart: () => void;
   onAnalysisComplete: (result: ComplianceReport) => void;
   onAnalysisError: () => void;
   isAnalyzing: boolean;
+  selectedNiche: NicheId;
 }
 
 export default function FileUpload({
   onAnalysisStart,
   onAnalysisComplete,
   onAnalysisError,
-  isAnalyzing
+  isAnalyzing,
+  selectedNiche
 }: FileUploadProps) {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -58,6 +61,7 @@ export default function FileUpload({
     try {
       const formData = new FormData();
       formData.append('file', uploadedFile);
+      formData.append('nicheId', selectedNiche);
 
       const response = await fetch('/api/analyze', {
         method: 'POST',

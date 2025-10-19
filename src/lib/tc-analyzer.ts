@@ -1,11 +1,19 @@
 import { ethers } from "ethers";
 import { createZGComputeNetworkBroker } from "@0glabs/0g-serving-broker";
 import OpenAI from "openai";
+import {
+  DEFAULT_NICHE_ID,
+  getNicheProfile,
+  getRiskNarrative,
+  NicheId,
+  NicheProfile
+} from "./niches";
 
 // Configuration
 const CONFIG = {
   RPC_URL: process.env.RPC_URL || "https://evmrpc-testnet.0g.ai",
   PRIVATE_KEY: process.env.PRIVATE_KEY || "",
+  // Updated to use GPT-OSS-120B provider after migration
   PROVIDER_ADDRESS: process.env.PROVIDER_GPT_OSS_120B || "0xf07240Efa67755B5311bc75784a061eDB47165Dd"
 };
 
@@ -16,16 +24,29 @@ export interface AnalysisResult {
   cons: string[];
   problematicClauses: string[];
   riskScore: number;
+  confidenceScore: number;
   suggestions: string[];
+  nicheId: NicheId;
+  regulations: string[];
+  focusAreas: string[];
+  riskNarrative: string;
 }
 
 export interface ComplianceReport {
   documentTitle: string;
   overallRiskScore: number;
+  overallConfidenceScore: number;
   sections: AnalysisResult[];
   criticalIssues: string[];
   recommendations: string[];
   analysisDate: string;
+  niche: {
+    id: NicheId;
+    name: string;
+    icon: string;
+    regulations: string[];
+    focusAreas: string[];
+  };
 }
 
 export class TCInsightAgent {
@@ -33,6 +54,7 @@ export class TCInsightAgent {
   private wallet: ethers.Wallet;
   private broker: any;
   private openai: OpenAI | null = null;
+  private profile: NicheProfile = getNicheProfile(DEFAULT_NICHE_ID);
 
   constructor() {
     this.provider = new ethers.JsonRpcProvider(CONFIG.RPC_URL);
@@ -46,24 +68,31 @@ export class TCInsightAgent {
 
   async initialize(): Promise<void> {
     try {
+      console.log("Initializing 0G Compute Network broker...");
       // Initialize broker
       this.broker = await createZGComputeNetworkBroker(this.wallet);
       
       // Setup account if needed
+      console.log("Setting up account...");
       await this.setupAccount();
       
-      // Acknowledge provider
+      // Re-verify provider (required after recent migration)
+      console.log(`Re-verifying provider: ${CONFIG.PROVIDER_ADDRESS} (GPT-OSS-120B)`);
       await this.broker.inference.acknowledgeProviderSigner(CONFIG.PROVIDER_ADDRESS);
+      console.log("Provider re-verification successful with GPT-OSS-120B");
       
       // Setup OpenAI client
+      console.log("Setting up AI client...");
       const { endpoint, model } = await this.broker.inference.getServiceMetadata(CONFIG.PROVIDER_ADDRESS);
       this.openai = new OpenAI({
         baseURL: endpoint,
         apiKey: "",
       });
       
+      console.log("Specter AI initialization complete");
+      
     } catch (error) {
-      console.error("Failed to initialize agent:", error);
+      console.error("Failed to initialize Specter AI:", error);
       throw error;
     }
   }
@@ -72,12 +101,17 @@ export class TCInsightAgent {
     try {
       const account = await this.broker.ledger.getLedger();
       const currentBalance = parseFloat(ethers.formatEther(account.totalBalance));
+      console.log(`Current account balance: ${currentBalance} 0G tokens`);
       
-      if (currentBalance < 1) {
+      if (currentBalance < 0.1) {
+        console.log("Adding funds to account...");
         await this.broker.ledger.depositFund(1);
+        console.log("Added 1 0G token to account");
       }
     } catch (error) {
+      console.log("Creating new account with 1 0G token...");
       await this.broker.ledger.addLedger(1);
+      console.log("Account created successfully");
     }
   }
 
@@ -138,37 +172,16 @@ export class TCInsightAgent {
     return chunks;
   }
 
+  setNiche(nicheId: string | undefined | null): void {
+    this.profile = getNicheProfile(nicheId ?? DEFAULT_NICHE_ID);
+  }
+
   async analyzeSection(sectionName: string, sectionContent: string): Promise<AnalysisResult> {
     if (!this.openai) {
       throw new Error("OpenAI client not initialized");
     }
 
-    const prompt = `You are a legal and compliance analyst AI specializing in Terms & Conditions analysis.
-
-Analyze the following Terms & Conditions section and provide a structured analysis.
-
-Section: "${sectionName}"
-Content: "${sectionContent}"
-
-Provide your analysis in the following JSON format:
-{
-  "sectionName": "${sectionName}",
-  "summary": "Brief plain-English explanation of what this section means",
-  "pros": ["Positive aspect 1", "Positive aspect 2", "Positive aspect 3"],
-  "cons": ["Concerning aspect 1", "Concerning aspect 2", "Concerning aspect 3"],
-  "problematicClauses": ["Specific problematic clause or practice"],
-  "riskScore": 5,
-  "suggestions": ["Improvement suggestion 1", "Improvement suggestion 2"]
-}
-
-Focus on:
-- User rights and protections
-- Data privacy compliance (GDPR, CCPA)
-- Fairness and transparency
-- Legal enforceability
-- Consumer protection compliance
-
-Risk Score: 1-10 (1=very safe, 10=high risk for users)`;
+    const prompt = this.profile.promptTemplate(sectionName, sectionContent);
 
     try {
       const messages = [{ role: "user" as const, content: prompt }];
@@ -202,7 +215,23 @@ Risk Score: 1-10 (1=very safe, 10=high risk for users)`;
         const jsonMatch = response.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           const result = JSON.parse(jsonMatch[0]);
-          return result as AnalysisResult;
+          const parsed: AnalysisResult = {
+            sectionName: result.sectionName ?? sectionName,
+            summary: result.summary ?? "",
+            pros: Array.isArray(result.pros) ? result.pros : [],
+            cons: Array.isArray(result.cons) ? result.cons : [],
+            problematicClauses: Array.isArray(result.problematicClauses) ? result.problematicClauses : [],
+            riskScore: typeof result.riskScore === "number" ? result.riskScore : 5,
+            confidenceScore: typeof result.confidenceScore === "number"
+              ? result.confidenceScore
+              : this.profile.defaultConfidence,
+            suggestions: Array.isArray(result.suggestions) ? result.suggestions : [],
+            nicheId: this.profile.id,
+            regulations: this.profile.regulations,
+            focusAreas: this.profile.focusAreas,
+            riskNarrative: getRiskNarrative(this.profile, typeof result.riskScore === "number" ? result.riskScore : 5)
+          };
+          return parsed;
         } else {
           throw new Error("No JSON found in response");
         }
@@ -215,7 +244,12 @@ Risk Score: 1-10 (1=very safe, 10=high risk for users)`;
           cons: ["Unable to parse structured response"],
           problematicClauses: [],
           riskScore: 5,
-          suggestions: ["Review section manually"]
+          confidenceScore: 0.5,
+          suggestions: ["Review section manually"],
+          nicheId: this.profile.id,
+          regulations: this.profile.regulations,
+          focusAreas: this.profile.focusAreas,
+          riskNarrative: getRiskNarrative(this.profile, 5)
         };
       }
 
@@ -228,12 +262,23 @@ Risk Score: 1-10 (1=very safe, 10=high risk for users)`;
         cons: ["Analysis could not be completed"],
         problematicClauses: [],
         riskScore: 5,
-        suggestions: ["Retry analysis"]
+        confidenceScore: 0,
+        suggestions: ["Retry analysis"],
+        nicheId: this.profile.id,
+        regulations: this.profile.regulations,
+        focusAreas: this.profile.focusAreas,
+        riskNarrative: getRiskNarrative(this.profile, 5)
       };
     }
   }
 
-  async analyzeDocument(document: string, title: string = "Terms & Conditions"): Promise<ComplianceReport> {
+  async analyzeDocument(
+    document: string,
+    title: string = "Terms & Conditions",
+    nicheId: string | undefined | null = DEFAULT_NICHE_ID
+  ): Promise<ComplianceReport> {
+    this.setNiche(nicheId);
+
     // Split document into sections
     const sections = this.splitIntoSections(document);
 
@@ -251,6 +296,10 @@ Risk Score: 1-10 (1=very safe, 10=high risk for users)`;
     const overallRiskScore = analysisResults.length > 0 
       ? Math.round(analysisResults.reduce((sum, r) => sum + r.riskScore, 0) / analysisResults.length)
       : 5;
+
+    const overallConfidenceScore = analysisResults.length > 0
+      ? Math.round((analysisResults.reduce((sum, r) => sum + (r.confidenceScore ?? 0.5), 0) / analysisResults.length) * 100) / 100
+      : 0;
 
     // Identify critical issues
     const criticalIssues: string[] = [];
@@ -270,15 +319,71 @@ Risk Score: 1-10 (1=very safe, 10=high risk for users)`;
     return {
       documentTitle: title,
       overallRiskScore,
+      overallConfidenceScore,
       sections: analysisResults,
       criticalIssues,
       recommendations: recommendations.slice(0, 5),
-      analysisDate: new Date().toISOString()
+      analysisDate: new Date().toISOString(),
+      niche: {
+        id: this.profile.id,
+        name: this.profile.name,
+        icon: this.profile.icon,
+        regulations: this.profile.regulations,
+        focusAreas: this.profile.focusAreas
+      }
     };
   }
 
   async checkBalance(): Promise<string> {
     const account = await this.broker.ledger.getLedger();
     return ethers.formatEther(account.totalBalance);
+  }
+
+  /**
+   * Discover available services from the network
+   */
+  async discoverServices(): Promise<any[]> {
+    if (!this.broker) {
+      throw new Error("Broker not initialized. Call initialize() first.");
+    }
+    
+    try {
+      console.log("Discovering available services...");
+      const services = await this.broker.inference.listService();
+      console.log(`Found ${services.length} available services`);
+      
+      services.forEach((service: any, index: number) => {
+        console.log(`Service ${index + 1}:`);
+        console.log(`  Provider: ${service.provider}`);
+        console.log(`  Model: ${service.model || 'N/A'}`);
+        console.log(`  Verifiability: ${service.verifiability || 'None'}`);
+      });
+      
+      return services;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.log("Service discovery failed:", errorMessage);
+      console.log("Will use official providers directly");
+      return [];
+    }
+  }
+
+  /**
+   * Re-verify provider after 0G Compute Network migration
+   * This method can be called manually if provider verification fails
+   */
+  async reVerifyProvider(): Promise<void> {
+    if (!this.broker) {
+      throw new Error("Broker not initialized. Call initialize() first.");
+    }
+    
+    console.log(`Re-verifying provider: ${CONFIG.PROVIDER_ADDRESS}`);
+    try {
+      await this.broker.inference.acknowledgeProviderSigner(CONFIG.PROVIDER_ADDRESS);
+      console.log("Provider re-verification successful");
+    } catch (error) {
+      console.error("Provider re-verification failed:", error);
+      throw new Error(`Provider re-verification failed: ${error}`);
+    }
   }
 }

@@ -46,7 +46,26 @@ Create a `.env.local` file in the root directory:
 # 0G Network Configuration
 PRIVATE_KEY=your_private_key_here
 RPC_URL=https://evmrpc-testnet.0g.ai
+
+# Primary Provider (GPT-OSS-120B)
 PROVIDER_GPT_OSS_120B=0xf07240Efa67755B5311bc75784a061eDB47165Dd
+```
+
+### ⚠️ **Important: 0G Compute Network Migration Update**
+
+Following the recent 0G Compute Network migration, **all users must re-verify their provider** to continue using the service. Specter AI automatically handles this re-verification process during initialization.
+
+**What this means:**
+- The app now uses **GPT-OSS-120B** as the primary AI model
+- Automatic fallback can be enabled if additional providers are configured
+- The app will automatically re-verify your provider on first use
+- No manual action required - it's handled seamlessly
+- If you encounter provider verification errors, the app will provide clear guidance
+
+**Technical Details:**
+The re-verification uses the updated SDK method:
+```javascript
+await broker.inference.acknowledgeProviderSigner(providerAddress);
 ```
 
 ### 3. Run Development Server
@@ -166,11 +185,43 @@ npm start
 npm run type-check
 ```
 
-## 📚 Learn More
+## 🔧 Troubleshooting
 
-- [0G Compute Network Documentation](https://docs.0g.ai)
-- [Next.js Documentation](https://nextjs.org/docs)
-- [0G SDK Examples](https://github.com/0gfoundation/compute-examples)
+### Provider Verification Issues (Post-Migration)
+
+If you encounter provider verification errors after the 0G Compute Network migration:
+
+1. **Check your environment variables**:
+   ```bash
+   # Ensure these are set in .env.local
+   PRIVATE_KEY=your_private_key_here
+   PROVIDER_GPT_OSS_120B=0xf07240Efa67755B5311bc75784a061eDB47165Dd
+   ```
+
+2. **Verify your wallet has sufficient balance**:
+   - Ensure your wallet has 0G testnet tokens
+   - Use the [0G Faucet](https://faucet.0g.ai/) to get test tokens
+
+3. **Check provider status**:
+   - The default provider `0xf07240Efa67755B5311bc75784a061eDB47165Dd` should be active
+   - If issues persist, try restarting the application
+
+4. **Console logs**:
+   - Check browser console for detailed error messages
+   - Look for "Provider re-verification" status messages
+
+### Common Error Messages
+
+- **"Provider re-verification failed"**: Check your private key and provider address
+- **"Broker not initialized"**: Restart the application
+- **"Insufficient balance"**: Add more 0G tokens to your wallet
+
+## 🆘 Support
+
+- [0G Discord Community](https://discord.gg/0glabs)
+- [GitHub Issues](https://github.com/your-repo/legal-agent/issues)
+- [Documentation](https://docs.0g.ai)
+- [0G Compute Network Migration Guide](https://docs.0g.ai/compute-network/migration)
 
 ## 🤝 Contributing
 

@@ -7,6 +7,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;
+    const nicheId = formData.get('nicheId') as string | null;
 
     if (!file) {
       return NextResponse.json(
@@ -130,18 +131,28 @@ The analysis will proceed with available content, but results may be limited. Fo
     
     try {
       await agent.initialize();
-      console.log('Agent initialized successfully');
+      console.log('Specter AI initialized successfully with provider re-verification');
     } catch (initError) {
       console.error('Agent initialization error:', initError);
+      
+      // Check if it's a provider verification error
+      const errorMessage = initError instanceof Error ? initError.message : String(initError);
+      if (errorMessage.includes('Provider re-verification failed')) {
+        return NextResponse.json(
+          { error: 'Provider re-verification failed after 0G Compute Network migration. Please ensure your wallet has sufficient balance and the provider is accessible.' },
+          { status: 503 }
+        );
+      }
+      
       return NextResponse.json(
-        { error: 'Failed to initialize AI analysis service. Please check your 0G network configuration and try again.' },
+        { error: 'Failed to initialize Specter AI analysis service. This may be due to the recent 0G Compute Network migration. Please try again or check the troubleshooting guide.' },
         { status: 500 }
       );
     }
 
     // Analyze the document
     try {
-      const analysisResult = await agent.analyzeDocument(documentText, file.name);
+      const analysisResult = await agent.analyzeDocument(documentText, file.name, nicheId ?? undefined);
       console.log('Analysis completed successfully');
       
       // Check remaining balance

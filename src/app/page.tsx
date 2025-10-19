@@ -4,11 +4,15 @@ import { useState } from 'react';
 import FileUpload from '@/components/FileUpload';
 import AnalysisResults from '@/components/AnalysisResultsNew';
 import SupportCard from '@/components/SupportCard';
+import MigrationNotice from '@/components/MigrationNotice';
+import NicheSelector from '@/components/NicheSelector';
 import { ComplianceReport } from '@/lib/tc-analyzer';
+import { DEFAULT_NICHE_ID, NicheId } from '@/lib/niches';
 
 export default function Home() {
   const [analysisResult, setAnalysisResult] = useState<ComplianceReport | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [selectedNiche, setSelectedNiche] = useState<NicheId>(DEFAULT_NICHE_ID);
 
   const handleAnalysisComplete = (result: ComplianceReport) => {
     setAnalysisResult(result);
@@ -72,161 +76,192 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          {/* Left Column - Upload & Features */}
-          <div className="xl:col-span-1 space-y-6">
-            {/* Upload Section */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
-                  <span className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mr-3">
-                    📄
-                  </span>
-                  Upload Document
-                </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Drag & drop or select your legal document
-                </p>
+        {/* Migration Notice */}
+        <MigrationNotice />
+
+        <div className="space-y-10">
+          {/* Upload & Niche Selection */}
+          <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+                <span className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mr-3">
+                  📄
+                </span>
+                Configure Analysis
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Select a compliance focus and upload your legal document.
+              </p>
+            </div>
+            <div className="p-6 space-y-6 lg:space-y-0 lg:flex lg:items-start lg:gap-8">
+              <div className="lg:w-1/2 xl:w-5/12">
+                <NicheSelector
+                  selectedNiche={selectedNiche}
+                  onSelect={setSelectedNiche}
+                  disabled={isAnalyzing}
+                />
               </div>
-              <div className="p-6">
+              <div className="lg:flex-1 w-full">
                 <FileUpload
                   onAnalysisStart={handleAnalysisStart}
                   onAnalysisComplete={handleAnalysisComplete}
                   onAnalysisError={handleAnalysisError}
                   isAnalyzing={isAnalyzing}
+                  selectedNiche={selectedNiche}
                 />
               </div>
             </div>
+          </section>
 
-            {/* Features Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4">
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                    <span className="text-green-600 dark:text-green-400 text-lg">⚖️</span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Compliance Check
-                  </h3>
-                </div>
-                <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                  <li className="flex items-center space-x-2">
-                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                    <span>GDPR & Privacy Rights</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                    <span>Consumer Protection</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                    <span>Legal Enforceability</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                    <span className="text-blue-600 dark:text-blue-400 text-lg">🎯</span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Risk Analysis
-                  </h3>
-                </div>
-                <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                  <li className="flex items-center space-x-2">
-                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                    <span>1-10 Risk Scoring</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                    <span>Problematic Clauses</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                    <span>Improvement Suggestions</span>
-                  </li>
-                </ul>
+          {/* Feature Highlights */}
+          <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">What Specter AI Checks</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Core compliance and risk insights included with every analysis.</p>
               </div>
             </div>
-          </div>
-
-          {/* Right Column - Results */}
-          <div className="xl:col-span-2 space-y-6">
-            {isAnalyzing && (
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center space-x-3">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        Analyzing Document...
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Specter AI is reviewing your document with 0G Compute Network
-                      </p>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-5">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                      <span className="text-green-600 dark:text-green-400 text-lg">⚖️</span>
                     </div>
+                    <h3 className="text-base font-semibold text-gray-900 dark:text-white">Compliance Check</h3>
                   </div>
+                  <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                    <li className="flex items-center space-x-2">
+                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                      <span>GDPR & Privacy Rights</span>
+                    </li>
+                    <li className="flex items-center space-x-2">
+                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                      <span>Consumer Protection</span>
+                    </li>
+                    <li className="flex items-center space-x-2">
+                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                      <span>Legal Enforceability</span>
+                    </li>
+                  </ul>
                 </div>
-                <div className="p-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                      <span className="text-sm text-blue-700 dark:text-blue-300">Processing document sections...</span>
+
+                <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-5">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                      <span className="text-blue-600 dark:text-blue-400 text-lg">🎯</span>
                     </div>
-                    <div className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Running compliance analysis...</span>
+                    <h3 className="text-base font-semibold text-gray-900 dark:text-white">Risk Analysis</h3>
+                  </div>
+                  <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                    <li className="flex items-center space-x-2">
+                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                      <span>1-10 Risk Scoring</span>
+                    </li>
+                    <li className="flex items-center space-x-2">
+                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                      <span>Problematic Clauses</span>
+                    </li>
+                    <li className="flex items-center space-x-2">
+                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                      <span>Improvement Suggestions</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-5">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                      <span className="text-purple-600 dark:text-purple-400 text-lg">📊</span>
                     </div>
-                    <div className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Generating risk assessment...</span>
-                    </div>
+                    <h3 className="text-base font-semibold text-gray-900 dark:text-white">Niche Insights</h3>
+                  </div>
+                  <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                    <li className="flex items-center space-x-2">
+                      <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                      <span>Industry-specific prompts</span>
+                    </li>
+                    <li className="flex items-center space-x-2">
+                      <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                      <span>Regulation references</span>
+                    </li>
+                    <li className="flex items-center space-x-2">
+                      <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                      <span>Risk narratives</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Analysis States */}
+          {isAnalyzing && (
+            <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center space-x-3">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Analyzing Document...</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Specter AI is reviewing your document with 0G Compute Network.</p>
                   </div>
                 </div>
               </div>
-            )}
+              <div className="p-6 space-y-4">
+                <div className="flex items-center space-x-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm text-blue-700 dark:text-blue-300">Processing document sections...</span>
+                </div>
+                <div className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Running compliance analysis...</span>
+                </div>
+                <div className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Generating risk assessment...</span>
+                </div>
+              </div>
+            </section>
+          )}
 
-            {analysisResult && (
+          {analysisResult && (
+            <section>
               <AnalysisResults result={analysisResult} />
-            )}
+            </section>
+          )}
 
-            {!analysisResult && !isAnalyzing && (
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="p-12 text-center">
-                  <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <span className="text-4xl">📄</span>
+          {!analysisResult && !isAnalyzing && (
+            <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="p-12 text-center">
+                <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <span className="text-4xl">📄</span>
+                </div>
+                <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-3">Ready for Analysis</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                  Upload a legal document to get started with AI-powered analysis. Specter AI will provide detailed insights and compliance recommendations.
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center space-x-2">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span>PDF Support</span>
                   </div>
-                  <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-3">
-                    Ready for Analysis
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
-                    Upload a legal document to get started with AI-powered analysis. Specter AI will provide detailed insights and compliance recommendations.
-                  </p>
-                  <div className="flex items-center justify-center space-x-6 text-sm text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center space-x-2">
-                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                      <span>PDF Support</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                      <span>TXT & MD Files</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                      <span>Up to 10MB</span>
-                    </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                    <span>TXT & MD Files</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                    <span>Up to 10MB</span>
                   </div>
                 </div>
               </div>
-            )}
-          </div>
-        </div>
+            </section>
+          )}
 
-        {/* Support Section */}
-        <div className="mt-12">
-          <SupportCard />
+          {/* Support Section */}
+          <section>
+            <SupportCard />
+          </section>
         </div>
       </main>
 
