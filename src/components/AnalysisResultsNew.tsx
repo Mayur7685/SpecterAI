@@ -159,17 +159,19 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
                 {result.documentTitle}
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-                <span role="img" aria-hidden>{profile.icon}</span>
+            <div className="flex items-center gap-6">
+              <div className="text-center">
+                <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+                  <span role="img" aria-hidden>{profile.icon}</span>
+                </div>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                  {profile.name}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Niche Focus
+                </p>
               </div>
-              <p className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                {profile.name}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Niche Focus
-              </p>
-              <div className="flex items-center gap-2 ml-6">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={downloadReport}
                   className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
