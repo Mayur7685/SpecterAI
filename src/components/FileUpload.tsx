@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { ComplianceReport } from '@/lib/tc-analyzer';
 import { NicheId } from '@/lib/niches';
+import { useWallet } from '@/contexts/WalletContext';
 
 interface FileUploadProps {
   onAnalysisStart: () => void;
@@ -20,6 +21,7 @@ export default function FileUpload({
   isAnalyzing,
   selectedNiche
 }: FileUploadProps) {
+  const { account, isConnected } = useWallet();
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,30 +55,81 @@ export default function FileUpload({
   });
 
   const handleAnalyze = async () => {
-    if (!uploadedFile) return;
+    if (!uploadedFile || !account || !isConnected) {
+      setError('Please connect your wallet first');
+      return;
+    }
 
     setError(null);
     onAnalysisStart();
 
     try {
-      const formData = new FormData();
-      formData.append('file', uploadedFile);
-      formData.append('nicheId', selectedNiche);
+      // Extract text from file
+      let documentText = '';
+      const fileName = uploadedFile.name.toLowerCase();
 
-      const response = await fetch('/api/analyze', {
+      if (fileName.endsWith('.txt') || fileName.endsWith('.md')) {
+        documentText = await uploadedFile.text();
+      } else if (fileName.endsWith('.pdf')) {
+        // For PDF, use the API route for extraction
+        const formData = new FormData();
+        formData.append('file', uploadedFile);
+        
+        const response = await fetch('/api/extract-text', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to extract text from PDF');
+        }
+        
+        const data = await response.json();
+        documentText = data.text;
+      } else {
+        throw new Error('Unsupported file type');
+      }
+
+      if (!documentText || documentText.trim().length < 100) {
+        throw new Error('Document too short or empty. Please provide a document with at least 100 characters.');
+      }
+
+      // Clean up the text
+      documentText = documentText
+        .replace(/\s+/g, ' ')
+        .replace(/\n\s*\n/g, '\n')
+        .trim();
+
+      console.log(`Processing document: ${uploadedFile.name} (${documentText.length} characters)`);
+      console.log(`Using wallet: ${account}`);
+
+      // Send to API for analysis with wallet address
+      const response = await fetch('/api/analyze-with-signature', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          walletAddress: account,
+          documentText,
+          fileName: uploadedFile.name,
+          nicheId: selectedNiche,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error(`Analysis failed: ${response.statusText}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Analysis failed');
       }
 
       const result = await response.json();
+      console.log('Analysis completed successfully');
+
       onAnalysisComplete(result);
-    } catch (error) {
-      console.error('Analysis error:', error);
-      setError(error instanceof Error ? error.message : 'Analysis failed. Please try again.');
+    } catch (err) {
+      console.error('Analysis error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Analysis failed. Please try again.';
+      setError(errorMessage);
       onAnalysisError();
     }
   };
@@ -88,7 +141,7 @@ export default function FileUpload({
 
   return (
     <div className="space-y-4">
-      {/* File Drop Zone */}
+        {/* File Drop Zone */}
       <div
         {...getRootProps()}
         className={`

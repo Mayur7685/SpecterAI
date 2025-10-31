@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TCInsightAgent } from '@/lib/tc-analyzer';
 import { PDFDocument } from 'pdf-lib';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdf = require('pdf-parse');
 
 export async function POST(request: NextRequest) {
@@ -54,12 +55,13 @@ export async function POST(request: NextRequest) {
             fields.forEach(field => {
               try {
                 if (field.constructor.name === 'PDFTextField') {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   const textField = field as any;
                   if (textField.getText) {
                     extractedText += textField.getText() + ' ';
                   }
                 }
-              } catch (fieldError) {
+              } catch {
                 // Skip problematic fields
               }
             });

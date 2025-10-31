@@ -6,10 +6,15 @@ import AnalysisResults from '@/components/AnalysisResultsNew';
 import SupportCard from '@/components/SupportCard';
 import MigrationNotice from '@/components/MigrationNotice';
 import NicheSelector from '@/components/NicheSelector';
+import WalletConnect from '@/components/WalletConnect';
+import BalanceChecker from '@/components/BalanceChecker';
+import CrowdfundSupport from '@/components/CrowdfundSupport';
 import { ComplianceReport } from '@/lib/tc-analyzer';
 import { DEFAULT_NICHE_ID, NicheId } from '@/lib/niches';
+import { useWallet } from '@/contexts/WalletContext';
 
 export default function Home() {
+  const { isConnected } = useWallet();
   const [analysisResult, setAnalysisResult] = useState<ComplianceReport | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedNiche, setSelectedNiche] = useState<NicheId>(DEFAULT_NICHE_ID);
@@ -46,14 +51,11 @@ export default function Home() {
                   AI-Powered Legal Analysis with 0G Compute
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-500 italic">
-                  "The best way to achieve impossible is to believe it is inevitable"
+                  &quot;The best way to achieve impossible is to believe it is inevitable&quot;
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span>0G Network</span>
-            </div>
+            <WalletConnect />
           </div>
         </div>
       </header>
@@ -94,22 +96,43 @@ export default function Home() {
               </p>
             </div>
             <div className="p-6 space-y-6 lg:space-y-0 lg:flex lg:items-start lg:gap-8">
-              <div className="lg:w-1/2 xl:w-5/12">
-                <NicheSelector
-                  selectedNiche={selectedNiche}
-                  onSelect={setSelectedNiche}
-                  disabled={isAnalyzing}
-                />
-              </div>
-              <div className="lg:flex-1 w-full">
-                <FileUpload
-                  onAnalysisStart={handleAnalysisStart}
-                  onAnalysisComplete={handleAnalysisComplete}
-                  onAnalysisError={handleAnalysisError}
-                  isAnalyzing={isAnalyzing}
-                  selectedNiche={selectedNiche}
-                />
-              </div>
+              {!isConnected ? (
+                <div className="w-full text-center py-8">
+                  <div className="mb-4">
+                    <span className="text-4xl">🔐</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    Connect Your Wallet
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Connect your wallet to start analyzing documents with Specter AI. <strong>Analysis is FREE!</strong> Optional donations help keep the service running. 💝
+                  </p>
+                  <div className="flex justify-center">
+                    <WalletConnect />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="lg:w-1/2 xl:w-5/12 space-y-4">
+                    <BalanceChecker />
+                    <CrowdfundSupport />
+                    <NicheSelector
+                      selectedNiche={selectedNiche}
+                      onSelect={setSelectedNiche}
+                      disabled={isAnalyzing}
+                    />
+                  </div>
+                  <div className="lg:flex-1 w-full">
+                    <FileUpload
+                      onAnalysisStart={handleAnalysisStart}
+                      onAnalysisComplete={handleAnalysisComplete}
+                      onAnalysisError={handleAnalysisError}
+                      isAnalyzing={isAnalyzing}
+                      selectedNiche={selectedNiche}
+                    />
+                  </div>
+                </>
+              )}
             </div>
           </section>
 

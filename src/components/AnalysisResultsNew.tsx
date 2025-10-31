@@ -518,6 +518,7 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
                     </div>
                   )}
                   {!isGeneratingImage && nftImage && (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={nftImage} alt="Mock Specter AI INFT" className="rounded-lg shadow-lg border border-white/40" />
                   )}
                   {!isGeneratingImage && !nftImage && (

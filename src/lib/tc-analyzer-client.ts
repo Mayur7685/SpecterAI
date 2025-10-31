@@ -11,10 +11,8 @@ import {
 
 // Configuration
 const CONFIG = {
-  RPC_URL: process.env.RPC_URL || "https://evmrpc-testnet.0g.ai",
-  PRIVATE_KEY: process.env.PRIVATE_KEY || "",
-  // Updated to use GPT-OSS-120B provider after migration
-  PROVIDER_ADDRESS: process.env.PROVIDER_GPT_OSS_120B || "0xf07240Efa67755B5311bc75784a061eDB47165Dd"
+  RPC_URL: process.env.NEXT_PUBLIC_RPC_URL || "https://evmrpc-testnet.0g.ai",
+  PROVIDER_ADDRESS: process.env.NEXT_PUBLIC_PROVIDER_GPT_OSS_120B || "0xf07240Efa67755B5311bc75784a061eDB47165Dd"
 };
 
 export interface AnalysisResult {
@@ -49,35 +47,30 @@ export interface ComplianceReport {
   };
 }
 
-export class TCInsightAgent {
+export class TCInsightAgentClient {
   private provider: ethers.JsonRpcProvider;
-  private wallet: ethers.Wallet;
+  private wallet: ethers.Wallet | ethers.JsonRpcSigner;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private broker: any;
+  private broker: any = null;
   private openai: OpenAI | null = null;
   private profile: NicheProfile = getNicheProfile(DEFAULT_NICHE_ID);
 
-  constructor() {
+  constructor(signer: ethers.Wallet | ethers.JsonRpcSigner) {
     this.provider = new ethers.JsonRpcProvider(CONFIG.RPC_URL);
-    
-    if (!CONFIG.PRIVATE_KEY) {
-      throw new Error("PRIVATE_KEY not found in environment variables");
-    }
-    
-    this.wallet = new ethers.Wallet(CONFIG.PRIVATE_KEY, this.provider);
+    this.wallet = signer;
   }
 
   async initialize(): Promise<void> {
     try {
-      console.log("Initializing 0G Compute Network broker...");
-      // Initialize broker
+      console.log("Initializing 0G Compute Network broker with user wallet...");
+      // Initialize broker with user's wallet
       this.broker = await createZGComputeNetworkBroker(this.wallet);
       
       // Setup account if needed
       console.log("Setting up account...");
       await this.setupAccount();
       
-      // Re-verify provider (required after recent migration)
+      // Re-verify provider
       console.log(`Re-verifying provider: ${CONFIG.PROVIDER_ADDRESS} (GPT-OSS-120B)`);
       await this.broker.inference.acknowledgeProviderSigner(CONFIG.PROVIDER_ADDRESS);
       console.log("Provider re-verification successful with GPT-OSS-120B");
@@ -99,6 +92,8 @@ export class TCInsightAgent {
   }
 
   private async setupAccount(): Promise<void> {
+    if (!this.broker) throw new Error("Broker not initialized");
+    
     try {
       const account = await this.broker.ledger.getLedger();
       const currentBalance = parseFloat(ethers.formatEther(account.totalBalance));
@@ -124,14 +119,14 @@ export class TCInsightAgent {
     const parts = document.split(/(?=(?:^|\n)\s*(?:\d+\.?\s*)?[A-Z][A-Z\s]{10,})/);
     
     parts.forEach((part, index) => {
-      if (part.trim().length > 50) { // Only include substantial sections
+      if (part.trim().length > 50) {
         const lines = part.trim().split('\n');
         const title = lines[0].trim() || `Section ${index + 1}`;
         const content = lines.slice(1).join('\n').trim();
         
         if (content.length > 20) {
           sections.push({
-            name: title.substring(0, 100), // Limit title length
+            name: title.substring(0, 100),
             content: content
           });
         }
@@ -149,7 +144,7 @@ export class TCInsightAgent {
       });
     }
 
-    return sections.slice(0, 10); // Limit to 10 sections for cost control
+    return sections.slice(0, 10);
   }
 
   private chunkText(text: string, maxLength: number): string[] {
@@ -178,8 +173,8 @@ export class TCInsightAgent {
   }
 
   async analyzeSection(sectionName: string, sectionContent: string): Promise<AnalysisResult> {
-    if (!this.openai) {
-      throw new Error("OpenAI client not initialized");
+    if (!this.openai || !this.broker) {
+      throw new Error("Client not initialized");
     }
 
     const prompt = this.profile.promptTemplate(sectionName, sectionContent);
@@ -336,57 +331,8 @@ export class TCInsightAgent {
   }
 
   async checkBalance(): Promise<string> {
+    if (!this.broker) throw new Error("Broker not initialized");
     const account = await this.broker.ledger.getLedger();
     return ethers.formatEther(account.totalBalance);
-  }
-
-  /**
-   * Discover available services from the network
-   */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async discoverServices(): Promise<any[]> {
-    if (!this.broker) {
-      throw new Error("Broker not initialized. Call initialize() first.");
-    }
-    
-    try {
-      console.log("Discovering available services...");
-      const services = await this.broker.inference.listService();
-      console.log(`Found ${services.length} available services`);
-      
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      services.forEach((service: any, index: number) => {
-        console.log(`Service ${index + 1}:`);
-        console.log(`  Provider: ${service.provider}`);
-        console.log(`  Model: ${service.model || 'N/A'}`);
-        console.log(`  Verifiability: ${service.verifiability || 'None'}`);
-      });
-      
-      return services;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.log("Service discovery failed:", errorMessage);
-      console.log("Will use official providers directly");
-      return [];
-    }
-  }
-
-  /**
-   * Re-verify provider after 0G Compute Network migration
-   * This method can be called manually if provider verification fails
-   */
-  async reVerifyProvider(): Promise<void> {
-    if (!this.broker) {
-      throw new Error("Broker not initialized. Call initialize() first.");
-    }
-    
-    console.log(`Re-verifying provider: ${CONFIG.PROVIDER_ADDRESS}`);
-    try {
-      await this.broker.inference.acknowledgeProviderSigner(CONFIG.PROVIDER_ADDRESS);
-      console.log("Provider re-verification successful");
-    } catch (error) {
-      console.error("Provider re-verification failed:", error);
-      throw new Error(`Provider re-verification failed: ${error}`);
-    }
   }
 }
