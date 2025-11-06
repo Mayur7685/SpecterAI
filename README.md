@@ -2,6 +2,10 @@
 
 Specter AI is an AI-powered legal compliance agent inspired by Suits’ Harvey Specter. It analyzes Terms & Conditions, Privacy Policies, and other legal documents to uncover risks, ensure GDPR compliance, and deliver actionable insights all powered by the decentralized 0G Compute Network.
 
+- Updated Demo: [https://youtu.be/G-5tHW955PY](https://youtu.be/G-5tHW955PY)
+- Previous Demo: [https://youtu.be/EexheQFSHCM](https://youtu.be/EexheQFSHCM)
+- X Thread: https://x.com/0gSpecterAI/status/1984245508802838578
+
 ## 🚀 Features
 
 - **📄 Document Upload**: Support for TXT, PDF, and Markdown files
